@@ -6,6 +6,14 @@ use uuid::Uuid;
 use tokio::sync::mpsc;
 use shield::ShieldScrubber;
 
+pub mod models;
+pub mod flattener;
+
+use models::SaasEventLog;
+use flattener::EventFlattener;
+use chrono::Utc;
+use serde_json::json;
+
 pub mod aether {
     tonic::include_proto!("aether");
 }
@@ -34,20 +42,40 @@ impl RefineryService for MyRefinery {
         let (tx, mut rx) = mpsc::channel(100);
         let job_id_clone = job_id.clone();
         
-        // Ingester Simulator
+        // Ingester Simulator (Mocking SQLx Fetch Stream)
         tokio::spawn(async move {
             let sample_rows = vec![
-                "User Alice (SSN: 123-45-6789) has role admin.",
-                "User Bob (PAN: 1234-5678-1234-5678) has role user."
+                SaasEventLog {
+                    event_id: Uuid::new_v4(),
+                    user_urn: "urn:aether:user:101".into(),
+                    action_type: "SUPPORT_TICKET_CREATED".into(),
+                    created_at: Utc::now(),
+                    payload: json!({
+                        "ticket_text": "Need help resetting PAN 1234-5678-1234-5678 for John Doe.",
+                        "assigned_to": "EmployeeX",
+                        "metrics": { "severity": "High" }
+                    }),
+                },
+                SaasEventLog {
+                    event_id: Uuid::new_v4(),
+                    user_urn: "urn:aether:user:909".into(),
+                    action_type: "CONFIG_MUTATED".into(),
+                    created_at: Utc::now(),
+                    payload: json!({
+                        "changes": ["changed role to CONFIDENTIAL"],
+                        "actor": "admin@example.com"
+                    }),
+                }
             ];
             for row in sample_rows {
-                tx.send(row.to_string()).await.unwrap();
+                tx.send(row).await.unwrap();
             }
         });
 
         // Flattener & Shield & Avro Writer
         tokio::spawn(async move {
             let scrubber = ShieldScrubber::new();
+            let flattener = EventFlattener::new();
             
             // Setup Avro Writer
             let schema_str = include_str!("../../../packages/semantic-spec/schemas/RefinedChunk.avsc");
@@ -58,10 +86,12 @@ impl RefineryService for MyRefinery {
             let file = File::create(&dump_path).unwrap();
             let mut writer = Writer::new(&schema, file);
 
-            while let Some(msg) = rx.recv().await {
-                // Flattening (Simulated)
-                let document = format!("Document flattened from legacy DB: {}", msg);
+            while let Some(event) = rx.recv().await {
+                // Flattening (Using the dedicated engine)
+                let document = flattener.flatten(&event);
                 
+                println!("[Flattener] Processed: {}", &document);
+
                 // Masking via Shield-PII
                 let mask_result = scrubber.mask(&document);
                 

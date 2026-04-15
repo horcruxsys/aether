@@ -2,36 +2,51 @@ use aho_corasick::AhoCorasick;
 use regex::Regex;
 use std::collections::HashMap;
 use uuid::Uuid;
+use wasm_bindgen::prelude::*;
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct MaskResult {
     pub scrubbed_text: String,
     pub pii_mask_map: HashMap<String, String>,
 }
 
+#[wasm_bindgen]
 pub struct ShieldScrubber {
     ac: AhoCorasick,
     patterns: Vec<Regex>,
 }
 
+#[wasm_bindgen]
 impl ShieldScrubber {
+    #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        // High-speed static keyword matching for known sensitive internal terms
         let keywords = &["CONFIDENTIAL", "PROJECT_X", "TOP_SECRET", "SSN", "PAN"];
         let ac = AhoCorasick::new(keywords).unwrap();
 
-        // Regex Automata for structured PII
-        // Mocking PAN and SSN-like patterns
         let patterns = vec![
             Regex::new(r"\b\d{3}-\d{2}-\d{4}\b").unwrap(), // SSN
             Regex::new(r"\b\d{4}-\d{4}-\d{4}-\d{4}\b").unwrap(), // PAN
             Regex::new(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+").unwrap(), // Email
-            // ... MOCK: FastText logic stubbed out to avoid heavy C++ dependencies ...
         ];
 
         ShieldScrubber { ac, patterns }
     }
 
+    #[wasm_bindgen]
+    pub fn mask_js(&self, input: &str) -> JsValue {
+        let result = self.mask_internal(input);
+        serde_wasm_bindgen::to_value(&result).unwrap()
+    }
+}
+
+// Internal implementation (non-WASM)
+impl ShieldScrubber {
     pub fn mask(&self, input: &str) -> MaskResult {
+        self.mask_internal(input)
+    }
+
+    fn mask_internal(&self, input: &str) -> MaskResult {
         let mut pii_mask_map = HashMap::new();
         let mut scrubbed = input.to_string();
 
@@ -60,9 +75,6 @@ impl ShieldScrubber {
             last_match = mat.end();
         }
         final_scrubbed.push_str(&scrubbed[last_match..]);
-
-        // 3. Mock FastText context filter
-        // If we found "Sandwich" in a certain context, maybe it's a code name, but we skip for MVP.
 
         MaskResult {
             scrubbed_text: final_scrubbed,
