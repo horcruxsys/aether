@@ -7,8 +7,9 @@ Details the high-performance Rust library responsible for PII/PHI detection and 
 ## Low-Level Design (LLD)
 
 ### Masking & Encryption Capabilities
+
 - **Aho-Corasick:** Deployed for ultra-fast matching against thousands of known static terms (e.g., highly sensitive internal project names, confidential code names).
 - **Regex Automata:** Employs deterministic finite automata to scan for structured personal data such as PANs, SSNs, and IBANs.
-- **WASM Interoperability:** By structuring the core logic correctly, `shield-pii` crosses language boundaries, easily exportable to the Node.js API layers. 
+- **WASM Interoperability:** By structuring the core logic correctly, `shield-pii` crosses language boundaries, easily exportable to the Node.js API layers.
 
 > A zero-dependency, high-performance library for identifying and masking sensitive data. It ensures that no PII ever leaves the Aether ecosystem un-encrypted or un-masked.

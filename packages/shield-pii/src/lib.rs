@@ -1,9 +1,9 @@
 use aho_corasick::AhoCorasick;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
-use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct MaskResult {
@@ -52,12 +52,14 @@ impl ShieldScrubber {
 
         // 1. Process Regexes
         for re in &self.patterns {
-            scrubbed = re.replace_all(&scrubbed, |caps: &regex::Captures| {
-                let matched_text = caps[0].to_string();
-                let token = format!("[[{}]]", Uuid::new_v4().to_string());
-                pii_mask_map.insert(token.clone(), matched_text);
-                token
-            }).to_string();
+            scrubbed = re
+                .replace_all(&scrubbed, |caps: &regex::Captures| {
+                    let matched_text = caps[0].to_string();
+                    let token = format!("[[{}]]", Uuid::new_v4().to_string());
+                    pii_mask_map.insert(token.clone(), matched_text);
+                    token
+                })
+                .to_string();
         }
 
         // 2. Process Aho-Corasick static keywords
@@ -66,11 +68,11 @@ impl ShieldScrubber {
 
         for mat in self.ac.find_iter(&scrubbed) {
             final_scrubbed.push_str(&scrubbed[last_match..mat.start()]);
-            
+
             let matched_text = &scrubbed[mat.start()..mat.end()];
             let token = format!("[[{}]]", Uuid::new_v4().to_string());
             pii_mask_map.insert(token.clone(), matched_text.to_string());
-            
+
             final_scrubbed.push_str(&token);
             last_match = mat.end();
         }

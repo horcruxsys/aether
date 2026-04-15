@@ -86,25 +86,6 @@ importers:
         specifier: 5.9.2
         version: 5.9.2
 
-  apps/mcp-bridge:
-    dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.3.6)
-    devDependencies:
-      '@types/node':
-        specifier: ^25.6.0
-        version: 25.6.0
-      tsup:
-        specifier: ^8.5.1
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.10)(tsx@4.21.0)(typescript@6.0.2)(yaml@2.8.3)
-      tsx:
-        specifier: ^4.21.0
-        version: 4.21.0
-      typescript:
-        specifier: ^6.0.2
-        version: 6.0.2
-
   apps/nexus-manager: {}
 
   apps/refinery-core: {}
@@ -133,8 +114,6 @@ importers:
   packages/sdk: {}
 
   packages/semantic-spec: {}
-
-  packages/shield: {}
 
   packages/shield-pii: {}
 

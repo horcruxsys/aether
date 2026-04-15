@@ -12,6 +12,15 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "lint": {
+      "outputs": []
+    },
+    "format": {
+      "outputs": []
+    },
+    "check-types": {
+      "outputs": []
     }
   }
 }

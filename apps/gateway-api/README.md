@@ -7,6 +7,7 @@ This documentation suite covers the Model Context Protocol (MCP) implementation 
 ## Low-Level Design (LLD)
 
 ### Secure API Layer & Routing
+
 - **`gateway-api`:** Fastify implementation serving as a high-throughput choke point validating migration requests via `Zod`. It orchestrates downstream Rust pipelines through a secure `gRPC` control plane wrapper.
 - **`mcp-bridge`:** Translates the system's capabilities directly into the Model Context Protocol (MCP). It defines how autonomous agents (like Claude or GPT) interact with Aether as a "Native Tool", enabling them to safely queue data refinements and retrieve grounded contextual snippets without ever touching bare metal.
 

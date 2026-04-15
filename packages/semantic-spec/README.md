@@ -7,6 +7,7 @@ Defines the Apache Avro schemas that serve as the contract for the entire ecosys
 ## Low-Level Design (LLD)
 
 ### Apache Avro Core
+
 - **Schema-First Contract:** By using `RefinedChunk.avsc`, we guarantee that upstream components (`refinery-core`) cannot publish malformed data, and downstream consumers (`nexus-manager`) always know the exact layout of the refined text, metadata, and mapping dictionaries.
 - **Zero-Copy Potential:** Compared to standard JSON, the binary format offers drastically lower serialization overhead, which is critical at terabyte-scale.
 

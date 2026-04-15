@@ -15,7 +15,7 @@ const server = new Server(
     capabilities: {
       tools: {},
     },
-  }
+  },
 );
 
 // Declare available Tools for Claude/LLM agents
@@ -24,13 +24,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: "trigger_migration_job",
-        description: "Programmatically trigger the Aether Refinery core pipeline to extract and mask data from a legacy schema.",
+        description:
+          "Programmatically trigger the Aether Refinery core pipeline to extract and mask data from a legacy schema.",
         inputSchema: {
           type: "object",
           properties: {
             source_urn: {
               type: "string",
-              description: "The SQL database source URN (e.g., 'cdc://legacy_db')",
+              description:
+                "The SQL database source URN (e.g., 'cdc://legacy_db')",
             },
             query_filters: {
               type: "string",
@@ -42,13 +44,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "query_vector_drift",
-        description: "Pull metrics on deleted Tombstones identified inside the Qdrant database to prevent LLM hallucinations.",
+        description:
+          "Pull metrics on deleted Tombstones identified inside the Qdrant database to prevent LLM hallucinations.",
         inputSchema: {
           type: "object",
           properties: {},
           required: [],
         },
-      }
+      },
     ],
   };
 });
@@ -83,7 +86,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   throw new Error(`Tool not found: ${name}`);
 });
 
-// Start the server using standard IPC (stdio) 
+// Start the server using standard IPC (stdio)
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);

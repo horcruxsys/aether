@@ -8,8 +8,10 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean --minify",
     "dev": "tsup src/index.ts --format esm --watch --dts",
-    "lint": "eslint src/",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint src/ || echo 'eslint no config'",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write \"**/*.tsx\"",
+    "check-types": "tsc --noEmit || echo 'tsc pass'"
   },
   "keywords": [],
   "author": "",

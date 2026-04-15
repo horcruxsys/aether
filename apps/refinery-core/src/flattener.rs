@@ -10,14 +10,23 @@ impl EventFlattener {
 
     pub fn process_batch(&self, batch: &[CdcEvent]) -> Vec<(String, String)> {
         // We use par_iter to blast through thousands of rows in parallel across CPU cores
-        batch.par_iter().map(|event| {
-            if event.operation == CdcOperation::Delete {
-                // If it's a CDC Delete, we generate a specific tombstone instruction
-                (event.log.event_id.to_string(), "TOMBSTONE_PRUNE_VECTOR".to_string())
-            } else {
-                (event.log.event_id.to_string(), self.flatten_event(&event.log))
-            }
-        }).collect()
+        batch
+            .par_iter()
+            .map(|event| {
+                if event.operation == CdcOperation::Delete {
+                    // If it's a CDC Delete, we generate a specific tombstone instruction
+                    (
+                        event.log.event_id.to_string(),
+                        "TOMBSTONE_PRUNE_VECTOR".to_string(),
+                    )
+                } else {
+                    (
+                        event.log.event_id.to_string(),
+                        self.flatten_event(&event.log),
+                    )
+                }
+            })
+            .collect()
     }
 
     fn flatten_event(&self, event: &SaasEventLog) -> String {
@@ -49,7 +58,10 @@ impl EventFlattener {
                 format!("[{}]", items.join(", "))
             }
             serde_json::Value::Object(obj) => {
-                let items: Vec<String> = obj.iter().map(|(k, v)| format!("{}: {}", k, self.stringify_value(v))).collect();
+                let items: Vec<String> = obj
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", k, self.stringify_value(v)))
+                    .collect();
                 format!("{{{}}}", items.join(", "))
             }
             serde_json::Value::Null => "null".to_string(),

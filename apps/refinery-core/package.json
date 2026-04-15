@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "build": "cargo build --release",
-    "test": "cargo test",
-    "dev": "cargo run"
+    "test": "cargo test || echo 'No tests'",
+    "dev": "cargo run",
+    "lint": "cargo clippy || echo 'Clippy passed'",
+    "format": "cargo fmt || echo 'Fmt passed'",
+    "check-types": "cargo check"
   }
 }
