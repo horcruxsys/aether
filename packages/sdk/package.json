@@ -1,0 +1,9 @@
+{
+  "name": "@aether/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build:ts": "cd ts && pnpm build",
+    "build:python": "cd python && uv build"
+  }
+}

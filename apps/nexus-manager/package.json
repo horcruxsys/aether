@@ -1,0 +1,10 @@
+{
+  "name": "nexus-manager",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'No build step required for Python' && exit 0",
+    "test": "uv run pytest",
+    "dev": "uv run src/main.py"
+  }
+}
