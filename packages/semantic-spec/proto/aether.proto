@@ -2,21 +2,18 @@ syntax = "proto3";
 
 package aether;
 
-message DataChunk {
-  string id = 1;
-  bytes content = 2;
-  map<string, string> metadata = 3;
+message MigrationRequest {
+  string source = 1;
+  string destination = 2;
+  map<string, string> options = 3;
 }
 
-message MaskingResult {
-  string original_id = 1;
-  string masked_content = 2;
-  repeated PIIFound pii_elements = 3;
+message MigrationResponse {
+  string job_id = 1;
+  string status = 2;
+  string message = 3;
 }
 
-message PIIFound {
-  string type = 1;
-  int32 start = 2;
-  int32 end = 3;
-  float confidence = 4;
+service RefineryService {
+  rpc StartMigration(MigrationRequest) returns (MigrationResponse) {}
 }

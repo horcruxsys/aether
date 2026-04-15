@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+apache-avro = "0.21.0"
+prost = "0.14.3"
+shield = { version = "0.1.0", path = "../../packages/shield-pii" }
+tokio = { version = "1.52.0", features = ["full"] }
+tonic = "0.14.5"
+uuid = { version = "1.23.0", features = ["v4"] }

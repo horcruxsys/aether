@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "RefinedChunk",
+  "namespace": "com.aether.semantic",
+  "fields": [
+    {"name": "uuid", "type": "string", "doc": "Unique identifier for the chunk."},
+    {"name": "source_urn", "type": "string", "doc": "Pointer to the original SQL row/file (e.g., sql://prod/users/101)."},
+    {"name": "content", "type": "string", "doc": "The cleaned, flattened text for embedding."},
+    {"name": "metadata", "type": {"type": "map", "values": "string"}, "doc": "Key-value pairs (e.g., role, department, security_level)."},
+    {"name": "pii_mask_map", "type": {"type": "map", "values": "string"}, "doc": "Mapping of placeholders to encrypted real values (for reconstruction)."}
+  ]
+}
