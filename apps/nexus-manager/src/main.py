@@ -7,7 +7,13 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import fastavro
 
+from vector_db import NexusQdrant
+from intelligence.graph import KnowledgeGraph
+
 DUMP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.cache/aether-dump"))
+
+qdrant = NexusQdrant()
+graph = KnowledgeGraph()
 
 class AvroHandler(FileSystemEventHandler):
     def process_file(self, file_path):
@@ -20,13 +26,27 @@ class AvroHandler(FileSystemEventHandler):
             with open(file_path, 'rb') as fo:
                 reader = fastavro.reader(fo)
                 for record in reader:
+                    chunk_uuid = record.get('uuid')
+                    content = record.get('content')
+                    mask_map = record.get('pii_mask_map')
+                    metadata = record.get('metadata')
+                    source_urn = record.get('source_urn', 'unknown')
+
                     print("-" * 50)
-                    print(f"UUID: {record.get('uuid')}")
-                    print(f"Content: {record.get('content')}")
-                    print(f"Mask Map: {record.get('pii_mask_map')}")
-                    print("-> [Nexus Chunker] Simulating cosine-similarity boundary detection...")
-                    print("-> [Nexus Embedder] Generating mock BGE-M3 1024d Vector...")
-                    print("-> [Nexus DB] Upserting to PgVector/Qdrant completed.")
+                    
+                    if content == "TOMBSTONE_PRUNE_VECTOR":
+                        qdrant.prune_vector(chunk_uuid)
+                    else:
+                        print(f"UUID: {chunk_uuid}")
+                        print(f"Content: {content}")
+                        print(f"Mask Map: {mask_map}")
+                        
+                        # GraphRAG Edge Extraction
+                        graph.generate_edges(source_urn, metadata, content)
+                        
+                        # Semantic Vector Clustering
+                        qdrant.upsert_embedding(chunk_uuid, content, mask_map, metadata)
+                        
         except Exception as e:
             print(f"[Nexus Orchestrator] Error parsing Avro: {e}")
 

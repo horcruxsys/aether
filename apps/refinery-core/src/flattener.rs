@@ -1,4 +1,5 @@
-use crate::models::SaasEventLog;
+use crate::models::{CdcEvent, CdcOperation, SaasEventLog};
+use rayon::prelude::*;
 
 pub struct EventFlattener {}
 
@@ -7,7 +8,19 @@ impl EventFlattener {
         EventFlattener {}
     }
 
-    pub fn flatten(&self, event: &SaasEventLog) -> String {
+    pub fn process_batch(&self, batch: &[CdcEvent]) -> Vec<(String, String)> {
+        // We use par_iter to blast through thousands of rows in parallel across CPU cores
+        batch.par_iter().map(|event| {
+            if event.operation == CdcOperation::Delete {
+                // If it's a CDC Delete, we generate a specific tombstone instruction
+                (event.log.event_id.to_string(), "TOMBSTONE_PRUNE_VECTOR".to_string())
+            } else {
+                (event.log.event_id.to_string(), self.flatten_event(&event.log))
+            }
+        }).collect()
+    }
+
+    fn flatten_event(&self, event: &SaasEventLog) -> String {
         let mut document = format!(
             "On {}, user {} performed the action {}. ",
             event.created_at.to_rfc3339(),

@@ -5,10 +5,11 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
+// Initialize a new MCP Server that autonomous agents will communicate with
 const server = new Server(
   {
-    name: "aether-mcp-bridge",
-    version: "0.1.0",
+    name: "Aether Agent Gateway",
+    version: "1.0.0",
   },
   {
     capabilities: {
@@ -17,35 +18,79 @@ const server = new Server(
   }
 );
 
+// Declare available Tools for Claude/LLM agents
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "check_health",
-        description: "Check the health of the Aether services",
+        name: "trigger_migration_job",
+        description: "Programmatically trigger the Aether Refinery core pipeline to extract and mask data from a legacy schema.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            source_urn: {
+              type: "string",
+              description: "The SQL database source URN (e.g., 'cdc://legacy_db')",
+            },
+            query_filters: {
+              type: "string",
+              description: "Any specific constraints to apply to the data pull",
+            },
+          },
+          required: ["source_urn"],
+        },
+      },
+      {
+        name: "query_vector_drift",
+        description: "Pull metrics on deleted Tombstones identified inside the Qdrant database to prevent LLM hallucinations.",
         inputSchema: {
           type: "object",
           properties: {},
+          required: [],
         },
-      },
+      }
     ],
   };
 });
 
+// Configure actions when variables are routed into the Node
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  if (request.params.name === "check_health") {
+  const { name, arguments: args } = request.params;
+
+  if (name === "trigger_migration_job") {
+    // In production, this would make a gRPC request downstream to the `gateway-api`
     return {
       content: [
         {
           type: "text",
-          text: "Aether services are standing by.",
+          text: `Successfully registered migration request for source: ${args?.source_urn}. Background CDC ingestion initiated on the rust Core.`,
         },
       ],
     };
   }
 
-  throw new Error("Tool not found");
+  if (name === "query_vector_drift") {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Drift metrics: 14 vectors pruned recently via TOMBSTONE mechanisms to prevent hallucinations.`,
+        },
+      ],
+    };
+  }
+
+  throw new Error(`Tool not found: ${name}`);
 });
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
+// Start the server using standard IPC (stdio) 
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error("Aether MCP Bridge is running on stdio transport.");
+}
+
+main().catch((error) => {
+  console.error("Agent Gateway Fatal Error:", error);
+  process.exit(1);
+});

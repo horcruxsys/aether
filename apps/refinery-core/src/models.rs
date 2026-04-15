@@ -11,3 +11,16 @@ pub struct SaasEventLog {
     pub created_at: DateTime<Utc>,
     pub payload: JsonValue,
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum CdcOperation {
+    Insert,
+    Update,
+    Delete,
+}
+
+#[derive(Debug, Clone)]
+pub struct CdcEvent {
+    pub operation: CdcOperation,
+    pub log: SaasEventLog,
+}

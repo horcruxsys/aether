@@ -9,7 +9,7 @@ use shield::ShieldScrubber;
 pub mod models;
 pub mod flattener;
 
-use models::SaasEventLog;
+use models::{SaasEventLog, CdcEvent, CdcOperation};
 use flattener::EventFlattener;
 use chrono::Utc;
 use serde_json::json;
@@ -42,78 +42,83 @@ impl RefineryService for MyRefinery {
         let (tx, mut rx) = mpsc::channel(100);
         let job_id_clone = job_id.clone();
         
-        // Ingester Simulator (Mocking SQLx Fetch Stream)
+        // Ingester Simulator (Massive CDC Stream)
         tokio::spawn(async move {
-            let sample_rows = vec![
-                SaasEventLog {
-                    event_id: Uuid::new_v4(),
-                    user_urn: "urn:aether:user:101".into(),
-                    action_type: "SUPPORT_TICKET_CREATED".into(),
-                    created_at: Utc::now(),
-                    payload: json!({
-                        "ticket_text": "Need help resetting PAN 1234-5678-1234-5678 for John Doe.",
-                        "assigned_to": "EmployeeX",
-                        "metrics": { "severity": "High" }
-                    }),
-                },
-                SaasEventLog {
-                    event_id: Uuid::new_v4(),
-                    user_urn: "urn:aether:user:909".into(),
-                    action_type: "CONFIG_MUTATED".into(),
-                    created_at: Utc::now(),
-                    payload: json!({
-                        "changes": ["changed role to CONFIDENTIAL"],
-                        "actor": "admin@example.com"
-                    }),
+            let mut batch = Vec::with_capacity(1000);
+            
+            // Generate 10,000 synthetic legacy logs to test Rayon multi-core processing
+            for i in 0..10_000 {
+                let operation = if i % 100 == 0 { CdcOperation::Delete } else { CdcOperation::Insert };
+                
+                batch.push(CdcEvent {
+                    operation,
+                    log: SaasEventLog {
+                        event_id: Uuid::new_v4(),
+                        user_urn: format!("urn:aether:user:{}", i),
+                        action_type: "BULK_LOAD".into(),
+                        created_at: Utc::now(),
+                        payload: json!({
+                            "iteration": i,
+                            "metrics": { "cpu_load_mock": i * 2 }
+                        }),
+                    }
+                });
+
+                if batch.len() == 1000 {
+                    tx.send(batch.clone()).await.unwrap();
+                    batch.clear();
                 }
-            ];
-            for row in sample_rows {
-                tx.send(row).await.unwrap();
             }
         });
 
-        // Flattener & Shield & Avro Writer
+        // Flattener & Shield & Avro Writer (Consuming in batches for bulk I/O)
         tokio::spawn(async move {
-            let scrubber = ShieldScrubber::new();
-            let flattener = EventFlattener::new();
+            let scrubber = std::sync::Arc::new(ShieldScrubber::new());
+            let flattener = std::sync::Arc::new(EventFlattener::new());
             
             // Setup Avro Writer
             let schema_str = include_str!("../../../packages/semantic-spec/schemas/RefinedChunk.avsc");
             let schema = Schema::parse_str(schema_str).unwrap();
             
-            // In a real app we'd configure the output path, we dump into our .cache directory here.
             let dump_path = format!("../../.cache/aether-dump/{}.avro", &job_id_clone);
             let file = File::create(&dump_path).unwrap();
             let mut writer = Writer::new(&schema, file);
 
-            while let Some(event) = rx.recv().await {
-                // Flattening (Using the dedicated engine)
-                let document = flattener.flatten(&event);
+            // rx receives Vec<CdcEvent> batches of 1000 each
+            while let Some(batch) = rx.recv().await {
                 
-                println!("[Flattener] Processed: {}", &document);
+                // Offload heavy Rayon CPU-bound work away from Tokio Async Loop
+                let f_clone = flattener.clone();
+                let results = tokio::task::spawn_blocking(move || {
+                    f_clone.process_batch(&batch)
+                }).await.unwrap();
 
-                // Masking via Shield-PII
-                let mask_result = scrubber.mask(&document);
-                
-                // Formatting to Avro
-                let mut record = apache_avro::types::Record::new(writer.schema()).unwrap();
-                record.put("uuid", apache_avro::types::Value::String(Uuid::new_v4().to_string()));
-                record.put("source_urn", apache_avro::types::Value::String("sql://mock/mock".to_string()));
-                record.put("content", apache_avro::types::Value::String(mask_result.scrubbed_text));
-                
-                let mut metadata = HashMap::new();
-                metadata.insert("job".to_string(), apache_avro::types::Value::String("migration".to_string()));
-                record.put("metadata", apache_avro::types::Value::Map(metadata));
+                // Masking and batch appending into Avro buffer
+                for (id, document) in results {
+                    let mask_result = scrubber.mask(&document);
 
-                let mut mask_map_avro = HashMap::new();
-                for (k, v) in mask_result.pii_mask_map {
-                    mask_map_avro.insert(k, apache_avro::types::Value::String(v));
+                    let mut record = apache_avro::types::Record::new(writer.schema()).unwrap();
+                    record.put("uuid", apache_avro::types::Value::String(id));
+                    record.put("source_urn", apache_avro::types::Value::String("cdc://legacy".to_string()));
+                    record.put("content", apache_avro::types::Value::String(mask_result.scrubbed_text));
+                    
+                    let mut metadata = HashMap::new();
+                    metadata.insert("job".to_string(), apache_avro::types::Value::String("cdc_migration".to_string()));
+                    record.put("metadata", apache_avro::types::Value::Map(metadata));
+
+                    let mut mask_map_avro = HashMap::new();
+                    for (k, v) in mask_result.pii_mask_map {
+                        mask_map_avro.insert(k, apache_avro::types::Value::String(v));
+                    }
+                    record.put("pii_mask_map", apache_avro::types::Value::Map(mask_map_avro));
+
+                    writer.append(record).unwrap();
                 }
-                record.put("pii_mask_map", apache_avro::types::Value::Map(mask_map_avro));
-
-                writer.append(record).unwrap();
+                
+                // Flush disk per 1000 records, not per row
+                writer.flush().unwrap();
+                println!("Flushed batch of 1000 CDC vectors to disk.");
             }
-            writer.flush().unwrap();
             println!("Refinery completed chunking path for job {}", &job_id_clone);
         });
 
