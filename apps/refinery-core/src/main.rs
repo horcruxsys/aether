@@ -21,8 +21,22 @@ pub mod aether {
 use aether::refinery_service_server::{RefineryService, RefineryServiceServer};
 use aether::{MigrationRequest, MigrationResponse};
 
-#[derive(Default)]
-pub struct MyRefinery {}
+pub struct MyRefinery {
+    pub flattener: std::sync::Arc<dyn flattener::BatchFlattener>,
+    pub scrubber: std::sync::Arc<ShieldScrubber>,
+}
+
+impl MyRefinery {
+    pub fn new(
+        flattener: std::sync::Arc<dyn flattener::BatchFlattener>,
+        scrubber: std::sync::Arc<ShieldScrubber>,
+    ) -> Self {
+        Self {
+            flattener,
+            scrubber,
+        }
+    }
+}
 
 #[tonic::async_trait]
 impl RefineryService for MyRefinery {
@@ -79,9 +93,9 @@ impl RefineryService for MyRefinery {
         });
 
         // Flattener & Shield & Avro Writer (Consuming in batches for bulk I/O)
+        let scrubber = self.scrubber.clone();
+        let flattener = self.flattener.clone();
         tokio::spawn(async move {
-            let scrubber = std::sync::Arc::new(ShieldScrubber::new());
-            let flattener = std::sync::Arc::new(EventFlattener::new());
 
             // Setup Avro Writer
             let schema_str =
@@ -154,7 +168,10 @@ impl RefineryService for MyRefinery {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "0.0.0.0:50051".parse()?;
-    let refinery = MyRefinery::default();
+    
+    let flattener = std::sync::Arc::new(flattener::EventFlattener::new());
+    let scrubber = std::sync::Arc::new(ShieldScrubber::new());
+    let refinery = MyRefinery::new(flattener, scrubber);
 
     println!("Refinery Core gRPC Server listening on {}", addr);
 

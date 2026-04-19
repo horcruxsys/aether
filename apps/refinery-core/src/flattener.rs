@@ -1,14 +1,20 @@
 use crate::models::{CdcEvent, CdcOperation, SaasEventLog};
 use rayon::prelude::*;
 
+pub trait BatchFlattener: Send + Sync {
+    fn process_batch(&self, batch: &[CdcEvent]) -> Vec<(String, String)>;
+}
+
 pub struct EventFlattener {}
 
 impl EventFlattener {
     pub fn new() -> Self {
         EventFlattener {}
     }
+}
 
-    pub fn process_batch(&self, batch: &[CdcEvent]) -> Vec<(String, String)> {
+impl BatchFlattener for EventFlattener {
+    fn process_batch(&self, batch: &[CdcEvent]) -> Vec<(String, String)> {
         // We use par_iter to blast through thousands of rows in parallel across CPU cores
         batch
             .par_iter()
@@ -28,7 +34,9 @@ impl EventFlattener {
             })
             .collect()
     }
+}
 
+impl EventFlattener {
     fn flatten_event(&self, event: &SaasEventLog) -> String {
         let mut document = format!(
             "On {}, user {} performed the action {}. ",

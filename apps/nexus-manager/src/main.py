@@ -10,12 +10,15 @@ import fastavro
 from vector_db import NexusQdrant
 from intelligence.graph import KnowledgeGraph
 
+from interfaces import VectorStore, GraphStore
+
 DUMP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.cache/aether-dump"))
 
-qdrant = NexusQdrant()
-graph = KnowledgeGraph()
-
 class AvroHandler(FileSystemEventHandler):
+    def __init__(self, vector_store: VectorStore, graph_store: GraphStore):
+        self.vector_store = vector_store
+        self.graph_store = graph_store
+
     def process_file(self, file_path):
         if not file_path.endswith('.avro'):
             return
@@ -35,17 +38,17 @@ class AvroHandler(FileSystemEventHandler):
                     print("-" * 50)
                     
                     if content == "TOMBSTONE_PRUNE_VECTOR":
-                        qdrant.prune_vector(chunk_uuid)
+                        self.vector_store.prune_vector(chunk_uuid)
                     else:
                         print(f"UUID: {chunk_uuid}")
                         print(f"Content: {content}")
                         print(f"Mask Map: {mask_map}")
                         
                         # GraphRAG Edge Extraction
-                        graph.generate_edges(source_urn, metadata, content)
+                        self.graph_store.generate_edges(source_urn, metadata, content)
                         
                         # Semantic Vector Clustering
-                        qdrant.upsert_embedding(chunk_uuid, content, mask_map, metadata)
+                        self.vector_store.upsert_embedding(chunk_uuid, content, mask_map, metadata)
                         
         except Exception as e:
             print(f"[Nexus Orchestrator] Error parsing Avro: {e}")
@@ -57,7 +60,11 @@ class AvroHandler(FileSystemEventHandler):
 def start_watcher():
     os.makedirs(DUMP_DIR, exist_ok=True)
     print(f"Starting Avro watcher on {DUMP_DIR}")
-    event_handler = AvroHandler()
+    
+    # Injecting dependencies purely matching interface definitions
+    qdrant = NexusQdrant()
+    graph = KnowledgeGraph()
+    event_handler = AvroHandler(vector_store=qdrant, graph_store=graph)
     observer = Observer()
     observer.schedule(event_handler, DUMP_DIR, recursive=False)
     observer.start()

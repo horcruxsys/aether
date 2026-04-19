@@ -1,8 +1,9 @@
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, VectorParams, Distance
 import random
+from interfaces import VectorStore
 
-class NexusQdrant:
+class NexusQdrant(VectorStore):
     def __init__(self):
         # Using memory storage for developmental speed without needing Docker.
         self.client = QdrantClient(":memory:")

@@ -1,8 +1,11 @@
-class KnowledgeGraph:
+from interfaces import GraphStore
+from typing import Dict, Any
+
+class KnowledgeGraph(GraphStore):
     def __init__(self):
         pass
         
-    def generate_edges(self, source_urn: str, metadata: dict, parsed_content: str):
+    def generate_edges(self, source_urn: str, metadata: Dict[str, Any], parsed_content: str) -> None:
         """
         Mimics GraphRAG extraction. In a production engine, this would use LLM parsing or NLP
         dependency trees to find explicit subject-verb-object relations.

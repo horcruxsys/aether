@@ -84,3 +84,37 @@ impl ShieldScrubber {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    #[test]
+    fn test_static_keyword_masking() {
+        let scrubber = ShieldScrubber::new();
+        let result = scrubber.mask("We have a PROJECT_X starting tomorrow.");
+        assert!(!result.scrubbed_text.contains("PROJECT_X"));
+        assert_eq!(result.pii_mask_map.len(), 1);
+        let key = result.pii_mask_map.keys().next().unwrap();
+        assert!(result.scrubbed_text.contains(key));
+        assert_eq!(result.pii_mask_map[key], "PROJECT_X");
+    }
+
+    #[test]
+    fn test_regex_ssn_masking() {
+        let scrubber = ShieldScrubber::new();
+        let result = scrubber.mask("User SSN: 123-45-6789 detected.");
+        assert!(!result.scrubbed_text.contains("123-45-6789"));
+        assert_eq!(result.pii_mask_map.len(), 1);
+    }
+    
+    // Fuzz test laying the groundwork for WASM edge scenarios
+    proptest! {
+        #[test]
+        fn doesnt_crash_on_random_strings(ref s in "\\PC*") {
+            let scrubber = ShieldScrubber::new();
+            scrubber.mask(s);
+        }
+    }
+}
