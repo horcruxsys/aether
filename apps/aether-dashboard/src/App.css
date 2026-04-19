@@ -41,6 +41,7 @@ body {
   font-weight: 700;
   margin-bottom: 3rem;
   background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.02em;
