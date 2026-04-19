@@ -22,5 +22,20 @@ spec:
             - name: grpc
               containerPort: 50051
               protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+                - /bin/grpc_health_probe
+                - -addr=localhost:50051
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - /bin/grpc_health_probe
+                - -addr=localhost:50051
+            initialDelaySeconds: 5
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

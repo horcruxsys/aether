@@ -8,6 +8,10 @@ import { z } from "zod";
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
 import path from "path";
+import { semanticRoutes } from "./routes/semantic.js";
+import mercurius from "mercurius";
+import fastifyWebsocket from "@fastify/websocket";
+import { createGraphQLOptions } from "./graphql.js";
 
 // Load gRPC definition
 const PROTO_PATH = path.resolve(
@@ -40,6 +44,19 @@ fastify.setSerializerCompiler(serializerCompiler);
 fastify.get("/health", async (request, reply) => {
   return { status: "ok", timestamp: new Date().toISOString() };
 });
+
+fastify.register(fastifyWebsocket);
+fastify.register(mercurius, createGraphQLOptions());
+
+fastify.register(async function (fastify) {
+  fastify.get("/ws/telemetry", { websocket: true }, (connection, req) => {
+    connection.socket.on("message", message => {
+      connection.socket.send(JSON.stringify({ event: "telemetry_diff", timestamp: Date.now() }));
+    });
+  });
+});
+
+fastify.register(semanticRoutes);
 
 const MigrationRequestSchema = z.object({
   source: z.string().url(),
