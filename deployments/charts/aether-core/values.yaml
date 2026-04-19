@@ -1,0 +1,24 @@
+replicaCount: 2
+
+image:
+  repository: aether-registry/refinery-core
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"
+
+service:
+  type: ClusterIP
+  port: 50051
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 75
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi

@@ -86,14 +86,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   throw new Error(`Tool not found: ${name}`);
 });
 
-// Start the server using standard IPC (stdio)
+export { server };
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("Aether MCP Bridge is running on stdio transport.");
 }
 
-main().catch((error) => {
-  console.error("Agent Gateway Fatal Error:", error);
-  process.exit(1);
-});
+if (process.env.NODE_ENV !== "test") {
+  main().catch((error) => {
+    console.error("Agent Gateway Fatal Error:", error);
+    process.exit(1);
+  });
+}

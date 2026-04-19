@@ -8,6 +8,16 @@ use uuid::Uuid;
 
 pub mod flattener;
 pub mod models;
+pub mod errors;
+pub mod adapters;
+pub mod telemetry;
+pub mod dlq;
+pub mod zero_copy;
+pub mod schema_registry;
+
+use dlq::DeadLetterQueue;
+use errors::AetherError;
+use tracing::{info, warn, error};
 
 use chrono::Utc;
 use flattener::EventFlattener;
@@ -23,17 +33,20 @@ use aether::{MigrationRequest, MigrationResponse};
 
 pub struct MyRefinery {
     pub flattener: std::sync::Arc<dyn flattener::BatchFlattener>,
-    pub scrubber: std::sync::Arc<ShieldScrubber>,
+    pub scrubber: std::sync::Arc<shield::ShieldScrubber>,
+    pub adapter: std::sync::Arc<dyn adapters::DataAdapter>,
 }
 
 impl MyRefinery {
     pub fn new(
         flattener: std::sync::Arc<dyn flattener::BatchFlattener>,
-        scrubber: std::sync::Arc<ShieldScrubber>,
+        scrubber: std::sync::Arc<shield::ShieldScrubber>,
+        adapter: std::sync::Arc<dyn adapters::DataAdapter>,
     ) -> Self {
         Self {
             flattener,
             scrubber,
+            adapter,
         }
     }
 }
@@ -50,7 +63,7 @@ impl RefineryService for MyRefinery {
         // However, since we mock saving the `.avro` file, we'll write it relative to CWD.
         let job_id = Uuid::new_v4().to_string();
 
-        println!(
+        info!(
             "Received migration request: source={}, dest={}",
             req.source, req.destination
         );
@@ -59,36 +72,32 @@ impl RefineryService for MyRefinery {
         let (tx, mut rx) = mpsc::channel(100);
         let job_id_clone = job_id.clone();
 
-        // Ingester Simulator (Massive CDC Stream)
+        // Universal Adapter Pipeline
+        let adapter = self.adapter.clone();
         tokio::spawn(async move {
-            let mut batch = Vec::with_capacity(1000);
-
-            // Generate 10,000 synthetic legacy logs to test Rayon multi-core processing
-            for i in 0..10_000 {
-                let operation = if i % 100 == 0 {
-                    CdcOperation::Delete
-                } else {
-                    CdcOperation::Insert
-                };
-
-                batch.push(CdcEvent {
-                    operation,
-                    log: SaasEventLog {
-                        event_id: Uuid::new_v4(),
-                        user_urn: format!("urn:aether:user:{}", i),
-                        action_type: "BULK_LOAD".into(),
-                        created_at: Utc::now(),
-                        payload: json!({
-                            "iteration": i,
-                            "metrics": { "cpu_load_mock": i * 2 }
-                        }),
-                    },
-                });
-
-                if batch.len() == 1000 {
-                    tx.send(batch.clone()).await.unwrap();
-                    batch.clear();
+            match adapter.connect().await {
+                Ok(_) => {
+                    info!("Successfully connected to enterprise data plane.");
+                    loop {
+                        match adapter.fetch_batch().await {
+                            Ok(batch) => {
+                                if batch.is_empty() { 
+                                    info!("CDC Source dry. Concluding ingestion.");
+                                    break; 
+                                }
+                                if let Err(e) = tx.send(batch).await {
+                                    error!("Channel closed unexpectedly: {}", e);
+                                    break;
+                                }
+                            }
+                            Err(e) => {
+                                error!("Adapter ingest failure: {}", e);
+                                break;
+                            }
+                        }
+                    }
                 }
+                Err(e) => error!("Failed to bind data adapter: {}", e),
             }
         });
 
@@ -150,9 +159,9 @@ impl RefineryService for MyRefinery {
 
                 // Flush disk per 1000 records, not per row
                 writer.flush().unwrap();
-                println!("Flushed batch of 1000 CDC vectors to disk.");
+                info!("Flushed batch of 1000 CDC vectors to disk.");
             }
-            println!("Refinery completed chunking path for job {}", &job_id_clone);
+            info!("Refinery completed chunking path for job {}", &job_id_clone);
         });
 
         let reply = MigrationResponse {
@@ -166,14 +175,18 @@ impl RefineryService for MyRefinery {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), anyhow::Error> {
+    // Initialize standard uniform tracing for the entire service
+    telemetry::init_telemetry()?;
+
     let addr = "0.0.0.0:50051".parse()?;
     
     let flattener = std::sync::Arc::new(flattener::EventFlattener::new());
-    let scrubber = std::sync::Arc::new(ShieldScrubber::new());
-    let refinery = MyRefinery::new(flattener, scrubber);
+    let scrubber = std::sync::Arc::new(shield::ShieldScrubber::new());
+    let adapter = std::sync::Arc::new(adapters::MockAdapter {});
+    let refinery = MyRefinery::new(flattener, scrubber, adapter);
 
-    println!("Refinery Core gRPC Server listening on {}", addr);
+    info!("Refinery Core gRPC Server listening on {}", addr);
 
     Server::builder()
         .add_service(RefineryServiceServer::new(refinery))

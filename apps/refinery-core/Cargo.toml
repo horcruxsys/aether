@@ -14,4 +14,9 @@ shield = { version = "0.1.0", path = "../../packages/shield-pii" }
 sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio-rustls", "uuid", "chrono", "json"] }
 tokio = { version = "1.52.0", features = ["full"] }
 tonic = "0.14.5"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
+thiserror = "2.0.11"
+anyhow = "1.0.95"
+async-trait = "0.1.83"
 uuid = { version = "1.23.0", features = ["v4"] }

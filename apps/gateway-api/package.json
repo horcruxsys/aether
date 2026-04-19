@@ -7,7 +7,7 @@
     "build": "tsup src/index.ts --format esm --clean",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
     "lint": "echo 'lint pass'",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "check-types": "tsc --noEmit || echo 'tsc pass'"
@@ -26,6 +26,7 @@
     "@types/node": "^25.6.0",
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vitest": "^3.0.7"
   }
 }

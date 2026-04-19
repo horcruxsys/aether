@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aether-core.fullname" . }}
+  labels:
+    app.kubernetes.io/name: refinery-core
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: refinery-core
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: refinery-core
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: grpc
+              containerPort: 50051
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
