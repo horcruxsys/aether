@@ -1,0 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono&display=swap');
+
+:root {
+  --bg-color: #05070a;
+  --surface-color: rgba(17, 25, 40, 0.75);
+  --accent-blue: #0ea5e9;
+  --accent-indigo: #6366f1;
+  --success-green: #10b981;
+  --danger-red: #ef4444;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+.dashboard-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  background: radial-gradient(circle at top right, rgba(14, 165, 233, 0.05), transparent),
+              radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.05), transparent);
+}
+
+.title-main {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 3rem;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+
+.telemetry-card {
+  width: 100%;
+  max-width: 900px;
+  background: var(--surface-color);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  margin-bottom: 3rem;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.log-viewer {
+  height: 320px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-blue) transparent;
+}
+
+.log-entry {
+  color: var(--success-green);
+  margin-bottom: 0.5rem;
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+  display: flex;
+  gap: 1rem;
+}
+
+.log-entry .timestamp {
+  color: var(--text-secondary);
+  min-width: 100px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.controls-group {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.status-indicator {
+  font-size: 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.status-nominal {
+  color: var(--success-green);
+}
+
+.status-drift {
+  color: var(--danger-red);
+  text-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.empty-state {
+  color: var(--text-secondary);
+  text-align: center;
+  padding-top: 4rem;
+}

@@ -12,6 +12,8 @@ import { semanticRoutes } from "./routes/semantic.js";
 import mercurius from "mercurius";
 import fastifyWebsocket from "@fastify/websocket";
 import { createGraphQLOptions } from "./graphql.js";
+import { webrtcRoutes } from "./webrtc.js";
+import { billableInterceptor } from "./billing.js";
 
 // Load gRPC definition
 const PROTO_PATH = path.resolve(
@@ -45,12 +47,15 @@ fastify.get("/health", async (request, reply) => {
   return { status: "ok", timestamp: new Date().toISOString() };
 });
 
+fastify.addHook("preHandler", billableInterceptor);
+
 fastify.register(fastifyWebsocket);
 fastify.register(mercurius, createGraphQLOptions());
+fastify.register(webrtcRoutes);
 
 fastify.register(async function (fastify) {
   fastify.get("/ws/telemetry", { websocket: true }, (connection, req) => {
-    connection.socket.on("message", message => {
+    connection.socket.on("message", (message: any) => {
       connection.socket.send(JSON.stringify({ event: "telemetry_diff", timestamp: Date.now() }));
     });
   });
