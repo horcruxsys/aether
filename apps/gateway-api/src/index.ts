@@ -56,7 +56,9 @@ fastify.register(webrtcRoutes);
 fastify.register(async function (fastify) {
   fastify.get("/ws/telemetry", { websocket: true }, (connection, req) => {
     connection.socket.on("message", (message: any) => {
-      connection.socket.send(JSON.stringify({ event: "telemetry_diff", timestamp: Date.now() }));
+      connection.socket.send(
+        JSON.stringify({ event: "telemetry_diff", timestamp: Date.now() }),
+      );
     });
   });
 });

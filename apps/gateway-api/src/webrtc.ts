@@ -11,18 +11,18 @@ export const webrtcRoutes = async (fastify: FastifyInstance) => {
   fastify.post("/api/rtc/offer", async (request, reply) => {
     const { peer_id, sdp } = request.body as any;
     peers.set(peer_id, sdp);
-    
-    // Broadcast the Session Description Protocol (SDP) offer down to 
+
+    // Broadcast the Session Description Protocol (SDP) offer down to
     // the matched target node across the cluster.
     request.log.info(`Broadcasting WebRTC offer for node: ${peer_id}`);
-    
+
     return { success: true, status: "OFFER_REGISTERED" };
   });
 
   fastify.post("/api/rtc/answer", async (request, reply) => {
     const { peer_id, sdp } = request.body as any;
     request.log.info(`Relaying WebRTC answer to node: ${peer_id}`);
-    
+
     return { success: true, status: "HANDSHAKE_COMPLETE" };
   });
 };

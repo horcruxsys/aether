@@ -20,16 +20,19 @@ export const semanticRoutes = async (fastify: FastifyInstance) => {
     },
     async (request, reply) => {
       const { query, target_nodes, depth } = request.body as any;
-      
+
       // MOCK: Dispatch conceptual request directly to Nexus Manager backend cluster
-      request.log.info(`Forwarding Graph-RAG traversal query: ${query} (Depth: ${depth})`);
+      request.log.info(
+        `Forwarding Graph-RAG traversal query: ${query} (Depth: ${depth})`,
+      );
 
       return {
         success: true,
         nodes_traversed: 42,
-        context_payload: "Synthesized edge payload referencing specific metadata clusters...",
+        context_payload:
+          "Synthesized edge payload referencing specific metadata clusters...",
       };
-    }
+    },
   );
 
   fastify.post(
@@ -39,15 +42,17 @@ export const semanticRoutes = async (fastify: FastifyInstance) => {
     },
     async (request, reply) => {
       const { embeddings, threshold } = request.body as any;
-      
+
       // MOCK: Emit highly restricted dot-product thresholding constraints
-      request.log.info(`Received array of shape [${embeddings.length}] projecting above ${threshold}`);
+      request.log.info(
+        `Received array of shape [${embeddings.length}] projecting above ${threshold}`,
+      );
 
       return {
         success: true,
         matched_uuids: ["urn:aether:cluster:alpha", "urn:aether:cluster:omega"],
         confidence_score: 0.941,
       };
-    }
+    },
   );
 };

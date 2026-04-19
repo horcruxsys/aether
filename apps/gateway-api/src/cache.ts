@@ -8,12 +8,22 @@ export const semanticCache = new Redis({
   lazyConnect: true,
 });
 
-export async function getCachedVector(queryRef: string): Promise<number[] | null> {
+export async function getCachedVector(
+  queryRef: string,
+): Promise<number[] | null> {
   const hit = await semanticCache.get(`aether_vec:${queryRef}`);
   return hit ? JSON.parse(hit) : null;
 }
 
-export async function setCachedVector(queryRef: string, embeddings: number[]): Promise<void> {
+export async function setCachedVector(
+  queryRef: string,
+  embeddings: number[],
+): Promise<void> {
   // Ensure cached nodes dissolve logically to prevent semantic drift against the backend embeddings
-  await semanticCache.set(`aether_vec:${queryRef}`, JSON.stringify(embeddings), "EX", 3600);
+  await semanticCache.set(
+    `aether_vec:${queryRef}`,
+    JSON.stringify(embeddings),
+    "EX",
+    3600,
+  );
 }

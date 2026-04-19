@@ -15,8 +15,10 @@ impl<'a> ZeroCopyAvroSerializer<'a> {
 
     /// Appends directly against the vector capacity pool without struct allocations
     pub fn fast_encode(&self, raw_bytes: &[u8], capacity_pool: &mut Vec<u8>) {
-        if raw_bytes.is_empty() { return; }
-        
+        if raw_bytes.is_empty() {
+            return;
+        }
+
         // Simulating writing a standard Avro chunk dynamically by mapping directly from memory buffer
         // In full production, this maps into the `apache_avro::Writer` configured to avoid `clone()` maps.
         let mut writer = Writer::new(self.schema.as_ref(), capacity_pool);

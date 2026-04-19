@@ -5,16 +5,16 @@ use tonic::Status;
 pub enum AetherError {
     #[error("Database constraint or connectivity error: {0}")]
     DatabaseError(#[from] sqlx::Error),
-    
+
     #[error("Semantic parsing error: {0}")]
     SemanticError(String),
-    
+
     #[error("File system IO error: {0}")]
     IoError(#[from] std::io::Error),
-    
+
     #[error("Avro encoding/decoding error: {0}")]
     AvroError(#[from] apache_avro::Error),
-    
+
     #[error("Internal processing error: {0}")]
     InternalError(#[from] anyhow::Error),
 

@@ -7,9 +7,14 @@ describe("MCP Bridge Tool Tests", () => {
     const listToolsHandler = (server as any).requestHandlers.get("tools/list");
     expect(listToolsHandler).toBeDefined();
 
-    const response = await listToolsHandler({ method: "tools/list", params: {} } as any, {} as any);
+    const response = await listToolsHandler(
+      { method: "tools/list", params: {} } as any,
+      {} as any,
+    );
     expect(response.tools.length).toBeGreaterThan(0);
-    expect(response.tools.find((t: any) => t.name === "trigger_migration_job")).toBeDefined();
+    expect(
+      response.tools.find((t: any) => t.name === "trigger_migration_job"),
+    ).toBeDefined();
   });
 
   it("should handle trigger_migration_job properly", async () => {
@@ -26,11 +31,13 @@ describe("MCP Bridge Tool Tests", () => {
           },
         },
       } as any,
-      {} as any
+      {} as any,
     );
 
     expect(response.content[0].type).toBe("text");
-    expect(response.content[0].text).toContain("Successfully registered migration request");
+    expect(response.content[0].text).toContain(
+      "Successfully registered migration request",
+    );
   });
 
   it("should handle query_vector_drift properly", async () => {
@@ -44,9 +51,11 @@ describe("MCP Bridge Tool Tests", () => {
           arguments: {},
         },
       } as any,
-      {} as any
+      {} as any,
     );
 
-    expect(response.content[0].text).toContain("Drift metrics: 14 vectors pruned");
+    expect(response.content[0].text).toContain(
+      "Drift metrics: 14 vectors pruned",
+    );
   });
 });

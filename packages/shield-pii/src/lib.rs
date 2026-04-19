@@ -108,7 +108,7 @@ mod tests {
         assert!(!result.scrubbed_text.contains("123-45-6789"));
         assert_eq!(result.pii_mask_map.len(), 1);
     }
-    
+
     // Fuzz test laying the groundwork for WASM edge scenarios
     proptest! {
         #[test]

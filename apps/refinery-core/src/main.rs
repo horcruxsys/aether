@@ -6,18 +6,18 @@ use tokio::sync::mpsc;
 use tonic::{Request, Response, Status, transport::Server};
 use uuid::Uuid;
 
+pub mod adapters;
+pub mod dlq;
+pub mod errors;
 pub mod flattener;
 pub mod models;
-pub mod errors;
-pub mod adapters;
-pub mod telemetry;
-pub mod dlq;
-pub mod zero_copy;
 pub mod schema_registry;
+pub mod telemetry;
+pub mod zero_copy;
 
 use dlq::DeadLetterQueue;
 use errors::AetherError;
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 use chrono::Utc;
 use flattener::EventFlattener;
@@ -81,9 +81,9 @@ impl RefineryService for MyRefinery {
                     loop {
                         match adapter.fetch_batch().await {
                             Ok(batch) => {
-                                if batch.is_empty() { 
+                                if batch.is_empty() {
                                     info!("CDC Source dry. Concluding ingestion.");
-                                    break; 
+                                    break;
                                 }
                                 if let Err(e) = tx.send(batch).await {
                                     error!("Channel closed unexpectedly: {}", e);
@@ -105,7 +105,6 @@ impl RefineryService for MyRefinery {
         let scrubber = self.scrubber.clone();
         let flattener = self.flattener.clone();
         tokio::spawn(async move {
-
             // Setup Avro Writer
             let schema_str =
                 include_str!("../../../packages/semantic-spec/schemas/RefinedChunk.avsc");
@@ -180,7 +179,7 @@ async fn main() -> Result<(), anyhow::Error> {
     telemetry::init_telemetry()?;
 
     let addr = "0.0.0.0:50051".parse()?;
-    
+
     let flattener = std::sync::Arc::new(flattener::EventFlattener::new());
     let scrubber = std::sync::Arc::new(shield::ShieldScrubber::new());
     let adapter = std::sync::Arc::new(adapters::MockAdapter {});

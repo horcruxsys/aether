@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-/// Decentralized Schema Registry supporting live hot-reloading 
+/// Decentralized Schema Registry supporting live hot-reloading
 /// of Aether Schema contracts without bounding to external API endpoints.
 pub struct AvroSchemaRegistry {
     schemas: Arc<RwLock<HashMap<String, Schema>>>,
@@ -18,7 +18,8 @@ impl AvroSchemaRegistry {
 
     /// Registers a backwards-compatible schema mutation
     pub async fn register_schema(&self, topic: &str, raw_schema: &str) -> Result<(), String> {
-        let parsed = Schema::parse_str(raw_schema).map_err(|e| format!("Invalid Avro Schema: {}", e))?;
+        let parsed =
+            Schema::parse_str(raw_schema).map_err(|e| format!("Invalid Avro Schema: {}", e))?;
         let mut map = self.schemas.write().await;
         map.insert(topic.to_string(), parsed);
         Ok(())
