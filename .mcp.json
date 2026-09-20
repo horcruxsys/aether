@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "browser": {
+      "command": "node",
+      "args": ["packages/browser-mcp/dist/index.js"],
+      "description": "Browser automation MCP server with Playwright and Chrome DevTools Protocol",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    "browser-dev": {
+      "command": "tsx",
+      "args": ["packages/browser-mcp/src/index.ts"],
+      "description": "Browser automation MCP server (development mode with hot reload)",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}

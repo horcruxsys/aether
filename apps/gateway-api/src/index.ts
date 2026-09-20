@@ -14,6 +14,7 @@ import fastifyWebsocket from "@fastify/websocket";
 import { createGraphQLOptions } from "./graphql.js";
 import { webrtcRoutes } from "./webrtc.js";
 import { billableInterceptor } from "./billing.js";
+import { authenticateOIDC } from "./auth.js";
 
 // Load gRPC definition
 const PROTO_PATH = path.resolve(
@@ -47,6 +48,8 @@ fastify.get("/health", async (request, reply) => {
   return { status: "ok", timestamp: new Date().toISOString() };
 });
 
+// Authentication and billing hooks (applied to all routes except /health)
+fastify.addHook("preHandler", authenticateOIDC);
 fastify.addHook("preHandler", billableInterceptor);
 
 fastify.register(fastifyWebsocket);
