@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # Vector database for nexus-manager
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT_API_KEY: ""
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aether
+
+  # Redis cache for gateway-api
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aether
+
+  # Nexus manager (vector-graph database)
+  nexus-manager:
+    build:
+      context: .
+      dockerfile: apps/nexus-manager/Dockerfile
+    container_name: nexus-manager
+    ports:
+      - "8000:8000"
+    environment:
+      QDRANT_PATH: /app/.cache/qdrant-storage
+      PYTHONUNBUFFERED: "1"
+      LOG_LEVEL: info
+    volumes:
+      - aether_cache:/app/.cache
+    depends_on:
+      - qdrant
+      - redis
+    healthcheck:
+      test: ["CMD", "python", "-m", "http.client", "localhost:8000", "/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aether
+
+  # Refinery core (data ingestion)
+  refinery-core:
+    build:
+      context: .
+      dockerfile: apps/refinery-core/Dockerfile
+    container_name: refinery-core
+    ports:
+      - "50051:50051"
+    environment:
+      RUST_LOG: info
+    volumes:
+      - aether_cache:/app/.cache
+    depends_on:
+      - nexus-manager
+    healthcheck:
+      test: ["CMD", "grpcurl", "-plaintext", "localhost:50051", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aether
+
+  # Gateway API (orchestration & semantic routes)
+  gateway-api:
+    build:
+      context: .
+      dockerfile: apps/gateway-api/Dockerfile
+    container_name: gateway-api
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      NEXUS_MANAGER_URL: http://nexus-manager:8000
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      nexus-manager:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      refinery-core:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aether
+
+networks:
+  aether:
+    driver: bridge
+
+volumes:
+  qdrant_data:
+  redis_data:
+  aether_cache:

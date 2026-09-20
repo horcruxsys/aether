@@ -1,0 +1,24 @@
+{
+  "name": "@aether/integration-tests",
+  "version": "0.1.0",
+  "description": "End-to-end integration tests for Aether pipeline",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [
+    "aether",
+    "integration-tests",
+    "e2e"
+  ],
+  "dependencies": {
+    "fastavro": "^1.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.0.0"
+  }
+}

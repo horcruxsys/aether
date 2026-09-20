@@ -1,0 +1,17 @@
+{
+  "name": "@aether/chaos-tests",
+  "version": "0.1.0",
+  "description": "Chaos engineering tests for Aether Kubernetes deployments",
+  "type": "module",
+  "scripts": {
+    "test": "echo 'Chaos tests require a real K8s cluster. See README for manual execution.'"
+  },
+  "keywords": [
+    "aether",
+    "chaos",
+    "kubernetes",
+    "resilience"
+  ],
+  "devDependencies": {},
+  "dependencies": {}
+}

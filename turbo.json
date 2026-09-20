@@ -9,6 +9,12 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "integration": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "inputs": ["tests/integration/**"],
+      "outputs": []
+    },
     "dev": {
       "cache": false,
       "persistent": true
@@ -17,6 +23,9 @@
       "outputs": []
     },
     "format": {
+      "outputs": []
+    },
+    "format:check": {
       "outputs": []
     },
     "check-types": {
