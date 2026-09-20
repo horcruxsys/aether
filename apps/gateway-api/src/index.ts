@@ -15,6 +15,8 @@ import { createGraphQLOptions } from "./graphql.js";
 import { webrtcRoutes } from "./webrtc.js";
 import { billableInterceptor } from "./billing.js";
 import { authenticateOIDC } from "./auth.js";
+import { initTelemetry, publishHealthStatus } from "./telemetry.js";
+import * as nexusClient from "./nexusClient.js";
 
 // Load gRPC definition
 const PROTO_PATH = path.resolve(
@@ -56,15 +58,8 @@ fastify.register(fastifyWebsocket);
 fastify.register(mercurius, createGraphQLOptions());
 fastify.register(webrtcRoutes);
 
-fastify.register(async function (fastify) {
-  fastify.get("/ws/telemetry", { websocket: true }, (connection, req) => {
-    connection.socket.on("message", (message: any) => {
-      connection.socket.send(
-        JSON.stringify({ event: "telemetry_diff", timestamp: Date.now() }),
-      );
-    });
-  });
-});
+// Initialize real telemetry streaming (replaces the mocked version)
+initTelemetry(fastify);
 
 fastify.register(semanticRoutes);
 
@@ -108,6 +103,21 @@ fastify.post(
 const start = async () => {
   try {
     await fastify.listen({ port: 3000, host: "0.0.0.0" });
+
+    // Publish periodic health status updates (MVP telemetry)
+    // In production (Phase 1+), this would come from actual ingestion events
+    setInterval(async () => {
+      try {
+        const jobs = await nexusClient.getActiveJobs();
+        publishHealthStatus({
+          status: "operational",
+          active_jobs: jobs.active_jobs.length,
+          total_vectors: jobs.total_processed,
+        });
+      } catch (error) {
+        fastify.log.debug("Telemetry: Failed to fetch jobs:", error);
+      }
+    }, 5000); // Every 5 seconds
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
