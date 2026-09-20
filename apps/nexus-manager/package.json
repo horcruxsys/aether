@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "echo 'No build step required for Python' && exit 0",
-    "test": "uv run pytest || echo 'pytest pass'",
+    "build": "echo 'No build step required for Python'",
+    "test": "uv run pytest --verbose",
     "dev": "uv run src/main.py",
-    "lint": "echo 'flake8/ruff pass'",
-    "format": "echo 'black pass'",
-    "check-types": "echo 'mypy pass'"
+    "lint": "echo 'Linting skipped (add ruff/pylint as needed)'",
+    "format": "echo 'Formatting skipped (add black/isort as needed)'",
+    "check-types": "echo 'Type checking skipped (add mypy as needed)'"
   }
 }

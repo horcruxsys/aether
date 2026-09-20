@@ -6,9 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src/ app/ || echo 'eslint complete'",
+    "test": "echo 'Dashboard tests: use --ui flag or external test runner'",
+    "lint": "eslint src/ app/",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "check-types": "tsc --noEmit || echo 'tsc pass'"
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "next": "16.2.3",
