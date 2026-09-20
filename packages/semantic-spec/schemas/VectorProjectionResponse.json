@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VectorProjectionResponse",
+  "description": "Response from semantic vector similarity search",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the search succeeded"
+    },
+    "matched_uuids": {
+      "type": "array",
+      "description": "UUIDs of matched chunks",
+      "items": {
+        "type": "string"
+      }
+    },
+    "matches": {
+      "type": "array",
+      "description": "Detailed match results",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Chunk UUID"
+          },
+          "score": {
+            "type": "number",
+            "description": "Cosine similarity score (0.0-1.0)"
+          },
+          "content": {
+            "type": "string",
+            "description": "Original chunk content"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Associated metadata"
+          },
+          "mask_map": {
+            "type": "object",
+            "description": "PII mask tokens"
+          },
+          "tenant_id": {
+            "type": "string",
+            "description": "Tenant identifier"
+          }
+        }
+      }
+    },
+    "confidence_score": {
+      "type": "number",
+      "description": "Average confidence across matches (0.0-1.0)"
+    }
+  },
+  "required": ["success", "matched_uuids", "matches", "confidence_score"],
+  "additionalProperties": false
+}

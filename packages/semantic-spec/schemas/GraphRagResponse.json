@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GraphRagResponse",
+  "description": "Response from graph-based RAG query containing edges and context",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the query succeeded"
+    },
+    "nodes_traversed": {
+      "type": "integer",
+      "description": "Number of nodes/edges traversed"
+    },
+    "edges_found": {
+      "type": "array",
+      "description": "Edges found in the knowledge graph",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "relation": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "context_payload": {
+      "type": "string",
+      "description": "Synthesized context from the traversal"
+    }
+  },
+  "required": ["success", "nodes_traversed", "edges_found", "context_payload"],
+  "additionalProperties": false
+}
