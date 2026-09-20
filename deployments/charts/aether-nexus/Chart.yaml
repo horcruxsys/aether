@@ -1,0 +1,15 @@
+apiVersion: v2
+name: aether-nexus
+description: Vector-graph database manager for Aether autonomous data fabric
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - aether
+  - vector-database
+  - qdrant
+  - semantic-search
+  - knowledge-graph
+maintainers:
+  - name: Aether Team
+    email: team@aether.dev
